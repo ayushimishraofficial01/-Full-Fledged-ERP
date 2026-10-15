@@ -11,7 +11,7 @@ const { User, Warehouse, Product, Inventory, StockTransaction, StockTransfer, Un
 const { ensureDefaultUnits } = require('../services/unit.service');
 const { stockIn, stockOut, transferStock } = require('../services/stock.service');
 
-const DEMO_USER = { name: 'Demo User', email: 'demo@inventory.local', password: 'Demo@1234' };
+const DEMO_USER = { name: 'Demo User', email: 'demo@inventory.local', password: 'Demo@1234', role: 'admin' };
 
 const WAREHOUSES = [
   { name: 'Kanpur Warehouse', code: 'KNP-01', location: 'Kanpur', address: 'Plot 14, Panki Industrial Area, Site 2', city: 'Kanpur', state: 'Uttar Pradesh', pincode: '208022', contactPerson: 'Ravi Verma', contactNumber: '+91 98390 11111' },
@@ -40,8 +40,8 @@ async function reset() {
 
 async function seed() {
   const doReset = process.argv.includes('--reset');
-  if (env.isProd && doReset && !process.argv.includes('--force')) {
-    throw new Error('Refusing to reset a production database. Add --force if you really mean it.');
+  if (env.isProd) {
+    throw new Error('Refusing to seed a production database. Use "npm run admin:bootstrap" to provision an administrator.');
   }
   await connectDB();
   if (doReset) {

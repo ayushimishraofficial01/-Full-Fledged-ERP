@@ -140,6 +140,15 @@ npm run seed:reset
 npm run dev
 ```
 
+For production, do not run the demo seed. Create or promote the first administrator through the private CLI instead:
+
+```bash
+cd server
+npm run admin:bootstrap
+```
+
+The CLI connects directly to the configured MongoDB (it will not fall back to an in-memory database). It prompts for the administrator name and email, and asks for a hidden password if it needs to create the account. If the email already belongs to an account, the CLI promotes that account. Public registration is disabled by default in production; enable `ALLOW_REGISTRATION=true` only when public, least-privilege account creation is intended.
+
 ## Field sales visits
 
 Under **Settings → User & Access → Roles & Permissions**, admins can create custom roles, select granular permissions, and assign those roles when creating or updating users. System roles remain protected from deletion, and assigned custom roles cannot be deleted until users are reassigned.
@@ -233,7 +242,8 @@ All responses have the shape `{ success, message?, ... }`. Errors have the shape
 - Image uploads check extension, MIME type and magic bytes, and are stored under random names with a 2 MB limit. Excel uploads are held in memory with limits on size (10 MB) and rows (10,000).
 - Helmet, a strict CORS allow-list (`CLIENT_URL`), and no secrets in source. Production refuses to start without a 32+ character `JWT_SECRET`.
 - Password reset tokens are 32 random bytes, stored as SHA-256, expire after 30 minutes and are single-use. The response is the same whether or not the email exists.
-- Set `ALLOW_REGISTRATION=false` after creating your accounts. All registered users share one workspace (see section 11).
+- Public registration defaults to disabled in production. The first administrator must be provisioned through the private `npm run admin:bootstrap` CLI; public registration and Google sign-in never grant admin privileges. If registration is explicitly enabled, new accounts receive the least-privilege User role. All registered users share one workspace (see section 11).
+- The default User and Sales roles cannot view or modify invoices or post stock movements. Grant operational write access only through trusted Manager/Admin or explicitly configured roles.
 
 ---
 

@@ -22,19 +22,18 @@ async function safeUser(user) {
 }
 
 exports.register = asyncHandler(async (req, res) => {
-  if (!env.allowRegistration && (await User.estimatedDocumentCount()) > 0) {
+  if (!env.allowRegistration) {
     throw ApiError.forbidden('New registrations are disabled. Ask an administrator for an account.');
   }
   const { name, email, password, phone } = req.body;
   if (phone && (await User.exists({ phone }))) throw ApiError.conflict('An account with this mobile number already exists.', [{ field: 'phone', message: 'Mobile number is already registered' }]);
   if (await User.exists({ email })) throw ApiError.conflict('An account with this email already exists.', [{ field: 'email', message: 'Email is already registered' }]);
 
-  const isFirstUser = (await User.estimatedDocumentCount()) === 0;
   const user = await User.create({
     name,
     email,
     password,
-    role: isFirstUser ? 'admin' : 'user',
+    role: 'user',
     ...(phone ? { phone } : {}),
   });
   user.lastLoginAt = new Date();
@@ -80,16 +79,15 @@ exports.googleLogin = asyncHandler(async (req, res) => {
   const email = String(info.email).toLowerCase();
   let user = await User.findOne({ email }).select('+tokenVersion');
   if (!user) {
-    if (!env.allowRegistration && (await User.estimatedDocumentCount()) > 0) {
+    if (!env.allowRegistration) {
       throw ApiError.forbidden('No account exists for this Google email. Ask an administrator for an account.');
     }
-    const isFirstUser = (await User.estimatedDocumentCount()) === 0;
     // Random password: this account signs in with Google (or can use "Forgot password" to set one).
     user = await User.create({
       name: String(info.name || email.split('@')[0]).slice(0, 100),
       email,
       password: `${crypto.randomBytes(24).toString('hex')}aA1`,
-      role: isFirstUser ? 'admin' : 'user',
+      role: 'user',
     });
   }
   if (user.status !== 'active') throw ApiError.forbidden('Your account is inactive. Contact an administrator.');

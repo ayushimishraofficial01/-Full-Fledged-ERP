@@ -18,6 +18,10 @@ async function ensureDefaultRoles() {
     const staffSalesPermissions = ['sales_expenses.view', 'sales_expenses.create', 'orders.view', 'orders.create', 'customers.lookup'];
     const billingPermissions = ['billing.view', 'billing.manage'];
     await Role.updateMany({}, { $pull: { permissions: 'hr.ai.use' } });
+    await Role.updateOne(
+      { name: { $in: ['USER', 'SALES'] }, isSystemRole: true },
+      { $pullAll: { permissions: ['billing.view', 'billing.manage', 'stock.in', 'stock.out'] } }
+    );
     const managerHrPermissions = [
       'hr.dashboard.view', 'hr.employees.view', 'hr.employees.edit',
       'hr.attendance.view', 'hr.attendance.edit', 'hr.leaves.view',
@@ -41,11 +45,11 @@ async function ensureDefaultRoles() {
     );
     await Role.updateOne(
       { name: 'USER', isSystemRole: true },
-      { $addToSet: { permissions: { $each: ['sales_visits.track', ...employeeHrPermissions, ...staffSalesPermissions, ...billingPermissions] } } }
+      { $addToSet: { permissions: { $each: ['sales_visits.track', ...employeeHrPermissions, ...staffSalesPermissions] } } }
     );
     await Role.updateOne(
       { name: 'SALES', isSystemRole: true },
-      { $addToSet: { permissions: { $each: ['sales_visits.track', ...employeeHrPermissions, ...staffSalesPermissions, ...billingPermissions] } } }
+      { $addToSet: { permissions: { $each: ['sales_visits.track', ...employeeHrPermissions, ...staffSalesPermissions] } } }
     );
   }).catch((error) => { defaultRolesPromise = null; throw error; });
   return defaultRolesPromise;

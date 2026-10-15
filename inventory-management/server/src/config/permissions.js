@@ -65,11 +65,11 @@ const DEFAULT_ROLE_PERMISSIONS = Object.freeze({
   ],
   user: [
     'dashboard.view', 'products.view', 'warehouses.view', 'inventory.view',
-    'stock.in', 'stock.out', 'stock.history', 'scanner.view', 'scanner.scan',
-    'sales_visits.track', 'sales_expenses.view', 'sales_expenses.create', 'billing.view', 'billing.manage', 'orders.view', 'orders.create', 'customers.lookup',
+    'stock.history', 'scanner.view', 'scanner.scan',
+    'sales_visits.track', 'sales_expenses.view', 'sales_expenses.create', 'orders.view', 'orders.create', 'customers.lookup',
     ...EMPLOYEE_HR_PERMISSIONS,
   ],
-  sales: ['dashboard.view', 'sales_visits.track', 'sales_expenses.view', 'sales_expenses.create', 'billing.view', 'billing.manage', 'orders.view', 'orders.create', 'customers.lookup', ...EMPLOYEE_HR_PERMISSIONS],
+  sales: ['dashboard.view', 'sales_visits.track', 'sales_expenses.view', 'sales_expenses.create', 'orders.view', 'orders.create', 'customers.lookup', ...EMPLOYEE_HR_PERMISSIONS],
 });
 
 function normalizeRole(role) {

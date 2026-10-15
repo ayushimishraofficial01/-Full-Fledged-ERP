@@ -5,9 +5,11 @@
 process.env.NODE_ENV = 'test';
 process.env.MONGO_URI = process.env.TEST_MONGO_URI || 'mongodb://127.0.0.1:27017/ims_test';
 process.env.JWT_SECRET = 'test-secret-that-is-long-enough-for-tests-123456';
+process.env.ALLOW_REGISTRATION = 'true';
 
 const mongoose = require('mongoose');
 const request = require('supertest');
+const { User } = require('../src/models');
 const { connectDB } = require('../src/config/db');
 const { ensureDefaultUnits } = require('../src/services/unit.service');
 const createApp = require('../src/app');
@@ -23,6 +25,7 @@ async function setup() {
     .post('/api/auth/register')
     .send({ name: 'Test User', email: 'test@example.com', password: 'Passw0rd!', confirmPassword: 'Passw0rd!' })
     .expect(201);
+  await User.updateOne({ email: 'test@example.com' }, { $set: { role: 'admin' } });
   return { app, agent };
 }
 

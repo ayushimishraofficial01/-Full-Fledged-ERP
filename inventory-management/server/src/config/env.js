@@ -28,7 +28,7 @@ const env = {
   cookieName: process.env.COOKIE_NAME || 'ims_token',
   cookieSameSite: process.env.COOKIE_SAMESITE || 'lax',
   cookieSecure: bool('COOKIE_SECURE', isProd),
-  allowRegistration: bool('ALLOW_REGISTRATION', true),
+  allowRegistration: bool('ALLOW_REGISTRATION', !isProd),
   // Google Sign-In (OAuth client ID from Google Cloud Console). Empty = Google login disabled.
   googleClientId: (process.env.GOOGLE_CLIENT_ID || '').trim(),
   maxImageSizeMb: Number(process.env.MAX_IMAGE_SIZE_MB || 2),

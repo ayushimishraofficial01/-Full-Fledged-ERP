@@ -7,13 +7,13 @@ mongoose.set('strictQuery', true);
 let transactionSupport = null;
 let memoryMongoServer = null;
 
-async function connectDB(uri = env.mongoUri) {
+async function connectDB(uri = env.mongoUri, { allowMemoryFallback = true } = {}) {
   const connectOptions = { autoIndex: true, serverSelectionTimeoutMS: 10000 };
 
   try {
     await mongoose.connect(uri, connectOptions);
   } catch (error) {
-    const shouldFallbackToMemoryDb = !env.isProd && (
+    const shouldFallbackToMemoryDb = allowMemoryFallback && !env.isProd && (
       uri === env.mongoUri ||
       uri.includes('127.0.0.1') ||
       uri.includes('localhost')
