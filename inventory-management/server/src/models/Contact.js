@@ -1,0 +1,4 @@
+const mongoose = require('mongoose');
+const contactSchema = new mongoose.Schema({ contactId: { type: String, unique: true, required: true }, firstName: String, lastName: String, designation: String, company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }, customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' }, phone: String, alternatePhone: String, email: String, department: String, contactType: { type: String, enum: ['Owner', 'Manager', 'Purchase Manager', 'Sales', 'Accounts', 'Other'], default: 'Other' }, assignedUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, notes: String, createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } }, { timestamps: true });
+contactSchema.index({ email: 1 }); contactSchema.index({ phone: 1 });
+module.exports = mongoose.model('Contact', contactSchema);

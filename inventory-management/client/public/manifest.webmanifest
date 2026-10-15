@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Gen Vyro",
+  "short_name": "Gen Vyro",
+  "description": "Inventory management and field sales visits.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0b6b8c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
