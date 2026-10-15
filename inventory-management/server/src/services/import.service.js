@@ -1,4 +1,5 @@
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
+const { PassThrough } = require('stream');
 const mongoose = require('mongoose');
 const env = require('../config/env');
 const { Product, Warehouse, Inventory, StockTransaction } = require('../models');
@@ -42,16 +43,29 @@ function toNumber(v) {
 }
 
 /** Reads the first sheet into plain row objects keyed by internal field names. */
-function parseWorkbook(buffer) {
+async function parseWorkbook(buffer, fileName = '') {
   let wb;
   try {
-    wb = XLSX.read(buffer, { type: 'buffer', cellDates: false, dense: true, sheetRows: env.maxImportRows + 1 });
+    wb = new ExcelJS.Workbook();
+    const ext = String(fileName).toLowerCase();
+    if (ext.endsWith('.csv')) {
+      const stream = new PassThrough();
+      stream.end(buffer);
+      await wb.csv.read(stream);
+    } else {
+      await wb.xlsx.load(buffer);
+    }
   } catch {
     throw ApiError.badRequest('Could not read the file. Please upload a valid Excel (.xlsx/.xls) or CSV file.');
   }
-  const sheetName = wb.SheetNames[0];
-  if (!sheetName) throw ApiError.badRequest('The file does not contain any sheet.');
-  const matrix = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', raw: true, blankrows: false });
+  const worksheet = wb.getWorksheet(1);
+  if (!worksheet) throw ApiError.badRequest('The file does not contain any sheet.');
+  const sheetName = worksheet.name || 'Sheet1';
+  const matrix = [];
+  worksheet.eachRow({ includeEmpty: true }, (row) => {
+    const values = row.values.slice(1).map((value) => value === undefined || value === null ? '' : value);
+    if (matrix.length < env.maxImportRows + 1) matrix.push(values);
+  });
   if (!matrix.length) throw ApiError.badRequest('The sheet is empty.');
 
   const headerRow = matrix[0].map((h) => HEADER_MAP[normHeader(h)] || null);
@@ -257,7 +271,7 @@ async function validateRows(inputRows, { updateExisting = false } = {}) {
 }
 
 async function previewImport(file, options) {
-  const { sheetName, rows } = parseWorkbook(file.buffer);
+  const { sheetName, rows } = await parseWorkbook(file.buffer, file.originalname);
   const result = await validateRows(rows, options);
   return { fileName: file.originalname, sheetName, ...result };
 }

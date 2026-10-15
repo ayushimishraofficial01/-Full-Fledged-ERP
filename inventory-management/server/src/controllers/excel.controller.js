@@ -33,7 +33,8 @@ exports.template = asyncHandler(async (req, res) => {
 // ---------- Export ----------
 exports.products = asyncHandler(async (req, res) => {
   const rows = await listProducts(req.query, LIMIT);
-  sendWorkbook(res, buildWorkbook([{ name: 'Products', columns: columns.productColumns, rows }]), 'products');
+  const buffer = await buildWorkbook([{ name: 'Products', columns: columns.productColumns, rows }]);
+  sendWorkbook(res, buffer, 'products');
 });
 
 exports.inventory = asyncHandler(async (req, res) => {
@@ -44,7 +45,8 @@ exports.inventory = asyncHandler(async (req, res) => {
     if (w) name = `inventory-${w.code}`;
   }
   if (req.query.stockStatus === 'LOW_OR_OUT') name = 'low-stock';
-  sendWorkbook(res, buildWorkbook([{ name: 'Inventory', columns: columns.inventoryColumns, rows }]), name);
+  const buffer = await buildWorkbook([{ name: 'Inventory', columns: columns.inventoryColumns, rows }]);
+  sendWorkbook(res, buffer, name);
 });
 
 exports.transactions = asyncHandler(async (req, res) => {
@@ -54,29 +56,35 @@ exports.transactions = asyncHandler(async (req, res) => {
     type === 'STOCK_IN' ? [columns.stockInColumns, 'stock-in']
       : type === 'STOCK_OUT' ? [columns.stockOutColumns, 'stock-out']
         : [columns.transactionColumns, 'transactions'];
-  sendWorkbook(res, buildWorkbook([{ name: name.replace('-', ' '), columns: cols, rows }]), name);
+  const buffer = await buildWorkbook([{ name: name.replace('-', ' '), columns: cols, rows }]);
+  sendWorkbook(res, buffer, name);
 });
 
 exports.transfers = asyncHandler(async (req, res) => {
   const rows = await listTransfers(req.query, LIMIT);
-  sendWorkbook(res, buildWorkbook([{ name: 'Transfers', columns: columns.transferColumns, rows }]), 'stock-transfers');
+  const buffer = await buildWorkbook([{ name: 'Transfers', columns: columns.transferColumns, rows }]);
+  sendWorkbook(res, buffer, 'stock-transfers');
 });
 
 exports.warehouses = asyncHandler(async (req, res) => {
   const rows = await listWarehouses(req.query, { paginate: false });
-  sendWorkbook(res, buildWorkbook([{ name: 'Warehouses', columns: columns.warehouseColumns, rows }]), 'warehouses');
+  const buffer = await buildWorkbook([{ name: 'Warehouses', columns: columns.warehouseColumns, rows }]);
+  sendWorkbook(res, buffer, 'warehouses');
 });
 
 exports.production = asyncHandler(async (req, res) => {
   const mode = String(req.query.mode || 'stock');
   if (mode === 'history') {
     const rows = await listProductionHistory(req.query, LIMIT);
-    return sendWorkbook(res, buildWorkbook([{ name: 'Production History', columns: columns.productionHistoryColumns, rows }]), 'production-history');
+    const buffer = await buildWorkbook([{ name: 'Production History', columns: columns.productionHistoryColumns, rows }]);
+    return sendWorkbook(res, buffer, 'production-history');
   }
   if (mode === 'transfers') {
     const rows = await listProductionTransfers(req.query, LIMIT);
-    return sendWorkbook(res, buildWorkbook([{ name: 'Production Transfers', columns: columns.productionTransferColumns, rows }]), 'production-transfers');
+    const buffer = await buildWorkbook([{ name: 'Production Transfers', columns: columns.productionTransferColumns, rows }]);
+    return sendWorkbook(res, buffer, 'production-transfers');
   }
   const rows = await listProductionStock(req.query, LIMIT);
-  sendWorkbook(res, buildWorkbook([{ name: 'Production Stock', columns: columns.productionStockColumns, rows }]), 'production-stock');
+  const buffer = await buildWorkbook([{ name: 'Production Stock', columns: columns.productionStockColumns, rows }]);
+  sendWorkbook(res, buffer, 'production-stock');
 });

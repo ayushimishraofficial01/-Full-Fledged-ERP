@@ -1,4 +1,5 @@
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
+const { PassThrough } = require('stream');
 const mongoose = require('mongoose');
 const env = require('../config/env');
 const asyncHandler = require('../utils/asyncHandler');
@@ -206,7 +207,8 @@ const workbookColumns = [
 
 exports.export = asyncHandler(async (req, res) => {
   const rows = await populate(SampleDispatch.find(buildFilter(req.query)).sort({ dispatchDate: -1 }).limit(env.maxExportRows)).lean();
-  sendWorkbook(res, buildWorkbook([{ name: 'Sample Dispatch', columns: workbookColumns, rows }]), 'sample-dispatch');
+  const buffer = await buildWorkbook([{ name: 'Sample Dispatch', columns: workbookColumns, rows }]);
+  sendWorkbook(res, buffer, 'sample-dispatch');
 });
 
 exports.template = asyncHandler(async (req, res) => {
@@ -216,7 +218,8 @@ exports.template = asyncHandler(async (req, res) => {
     sampleProducts: [{ sku: 'P001', quantity: 2, unit: 'PCS' }, { sku: 'P002', quantity: 1, unit: 'PCS' }], dispatchDate: new Date(),
     dispatchMethod: '', trackingNumber: '', expectedDeliveryDate: null, status: 'Pending', remarks: 'Sample entry',
   };
-  sendWorkbook(res, buildWorkbook([{ name: 'Sample Dispatch', columns: headers, rows: [sample] }]), 'sample-dispatch-template');
+  const templateBuffer = await buildWorkbook([{ name: 'Sample Dispatch', columns: headers, rows: [sample] }]);
+  sendWorkbook(res, templateBuffer, 'sample-dispatch-template');
 });
 
 const HEADER_MAP = {
@@ -238,8 +241,9 @@ function parseProductCell(value) {
 function workbookDate(value) {
   if (value instanceof Date) return value;
   if (typeof value === 'number') {
-    const parsed = XLSX.SSF.parse_date_code(value);
-    return parsed ? new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H, parsed.M, parsed.S)) : null;
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    excelEpoch.setUTCDate(excelEpoch.getUTCDate() + value);
+    return excelEpoch;
   }
   const date = value ? new Date(value) : null;
   return date && !Number.isNaN(date.getTime()) ? date : null;
@@ -247,11 +251,26 @@ function workbookDate(value) {
 
 exports.importPreview = asyncHandler(async (req, res) => {
   let workbook;
-  try { workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true }); }
-  catch { throw ApiError.badRequest('Could not read the Excel file.'); }
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) throw ApiError.badRequest('The Excel file has no worksheet.');
-  const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', blankrows: false });
+  try {
+    workbook = new ExcelJS.Workbook();
+    const ext = String(req.file.originalname || '').toLowerCase();
+    if (ext.endsWith('.csv')) {
+      const stream = new PassThrough();
+      stream.end(req.file.buffer);
+      await workbook.csv.read(stream);
+    } else {
+      await workbook.xlsx.load(req.file.buffer);
+    }
+  } catch {
+    throw ApiError.badRequest('Could not read the Excel file.');
+  }
+  const worksheet = workbook.getWorksheet(1);
+  if (!worksheet) throw ApiError.badRequest('The Excel file has no worksheet.');
+  const sheetName = worksheet.name || 'Sheet1';
+  const matrix = [];
+  worksheet.eachRow({ includeEmpty: true }, (row) => {
+    matrix.push(row.values.slice(1).map((cell) => (cell === undefined || cell === null ? '' : cell)));
+  });
   if (!matrix.length) throw ApiError.badRequest('The worksheet is empty.');
   const headers = matrix[0].map((header) => HEADER_MAP[normalizeHeader(header)] || null);
   const rows = matrix.slice(1).map((cells, index) => {

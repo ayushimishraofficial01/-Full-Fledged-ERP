@@ -9,6 +9,6 @@ router.get('/:id', requirePermission('warehouses.view'), c.get);
 router.post('/', requirePermission('warehouses.create'), validate(warehouseBody), c.create);
 router.put('/:id', requirePermission('warehouses.edit'), validate(warehouseBody), c.update);
 router.delete('/:id', requirePermission('warehouses.delete'), c.remove);
-router.patch('/:id/restore', c.restore);
+router.patch('/:id/restore', requirePermission('warehouses.edit'), c.restore);
 
 module.exports = router;

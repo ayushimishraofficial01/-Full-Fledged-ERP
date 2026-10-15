@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const env = require('../config/env');
 
 const STATUS_LABEL = { IN_STOCK: 'In Stock', LOW_STOCK: 'Low Stock', OUT_OF_STOCK: 'Out of Stock' };
@@ -24,19 +24,24 @@ function fmtDate(d, withTime = true) {
  * columns: [{ header, value: (row) => any, width }]
  * Returns an .xlsx Buffer.
  */
-function buildWorkbook(sheets) {
-  const wb = XLSX.utils.book_new();
+async function buildWorkbook(sheets) {
+  const wb = new ExcelJS.Workbook();
   sheets.forEach(({ name, columns, rows }) => {
-    const aoa = [columns.map((c) => c.header), ...rows.map((r) => columns.map((c) => {
-      const v = c.value(r);
-      return v === undefined || v === null ? '' : v;
-    }))];
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = columns.map((c) => ({ wch: c.width || Math.max(10, c.header.length + 2) }));
-    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(rows.length, 1), c: columns.length - 1 } }) };
-    XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+    const ws = wb.addWorksheet(String(name || 'Sheet').slice(0, 31));
+    ws.columns = columns.map((c) => ({ header: c.header, key: c.header, width: c.width || Math.max(10, String(c.header).length + 2) }));
+    rows.forEach((r) => {
+      const values = columns.map((c) => {
+        const v = c.value(r);
+        return v === undefined || v === null ? '' : v;
+      });
+      ws.addRow(values);
+    });
+    ws.autoFilter = {
+      from: 'A1',
+      to: { row: Math.max(2, rows.length + 1), column: columns.length },
+    };
   });
-  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx', compression: true });
+  return wb.xlsx.writeBuffer();
 }
 
 function sendWorkbook(res, buffer, baseName) {

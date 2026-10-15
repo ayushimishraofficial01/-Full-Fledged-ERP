@@ -312,7 +312,7 @@ exports.exportReports = asyncHandler(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     return res.send(pdf);
   }
-  const workbook = buildWorkbook([{
+  const workbook = await buildWorkbook([{
     name: 'Attendance',
     columns: [
       { header: 'Employee', value: (row) => row.employeeName },

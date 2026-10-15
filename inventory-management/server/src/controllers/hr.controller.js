@@ -103,7 +103,7 @@ function exportSheet(name, headers, rows) {
   };
 }
 
-function sendReportWorkbook(res, report, kind) {
+async function sendReportWorkbook(res, report, kind) {
   const available = {
     employees: exportSheet('Employees', [
       ['Employee ID', (row) => row.employeeId], ['Name', (row) => row.name], ['Email', (row) => row.email],
@@ -146,7 +146,8 @@ function sendReportWorkbook(res, report, kind) {
     : ['daily', 'weekly', 'monthly'].includes(kind) ? 'attendance'
       : kind;
   const sheets = sheetKind && available[sheetKind] ? [available[sheetKind]] : Object.values(available);
-  sendWorkbook(res, buildWorkbook(sheets), `hr-${sheetKind || 'reports'}`);
+  const buffer = await buildWorkbook(sheets);
+  sendWorkbook(res, buffer, `hr-${sheetKind || 'reports'}`);
 }
 
 exports.dashboard = asyncHandler(async (req, res) => {

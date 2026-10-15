@@ -1,6 +1,6 @@
 const { test, before, after, describe } = require('node:test');
 const assert = require('node:assert/strict');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const { setup, teardown, request } = require('./helpers');
 
 let app;
@@ -289,22 +289,25 @@ describe('Inventory views, dashboard and reports', () => {
         resp.on('data', (c) => chunks.push(c));
         resp.on('end', () => cb(null, Buffer.concat(chunks)));
       }).expect(200);
-      const wb = XLSX.read(res.body, { type: 'buffer' });
-      assert.ok(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]).length >= 1, `${path} has rows`);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(res.body);
+      const sheet = workbook.getWorksheet(1);
+      assert.ok(sheet.rowCount >= 2, `${path} has rows`);
     }
   });
 });
 
 describe('Excel import', () => {
-  const makeFile = (rows) => {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Products');
-    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const makeFile = async (rows) => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Products');
+    rows.forEach((row) => sheet.addRow(row));
+    return workbook.xlsx.writeBuffer();
   };
   const header = ['Product Name', 'SKU', 'Category', 'Brand', 'HSN', 'Size', 'Unit', 'Warehouse', 'Quantity', 'Minimum Stock', 'Description', 'Price (INR)'];
 
   test('preview validates rows without writing', async () => {
-    const file = makeFile([
+    const file = await makeFile([
       header,
       ['Paper Cup', 'P004', 'Cups', '', '4823', 150, 'ML', 'Kanpur', 800, 1000, '', 49.5],
       ['Paper Cup', 'P004', 'Cups', '', '4823', 150, 'ML', 'LKO-01', 200, 1000, '', 49.5],
@@ -352,7 +355,7 @@ describe('Excel import', () => {
   });
 
   test('missing required columns are reported', async () => {
-    const res = await agent.post('/api/import/products/preview').attach('file', makeFile([['Name', 'Qty'], ['x', 1]]), 'bad.xlsx');
+    const res = await agent.post('/api/import/products/preview').attach('file', await makeFile([['Name', 'Qty'], ['x', 1]]), 'bad.xlsx');
     assert.equal(res.status, 400);
     assert.match(res.body.message, /Missing required column/);
   });

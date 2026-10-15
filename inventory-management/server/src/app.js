@@ -44,6 +44,17 @@ function createApp() {
   app.use(compression());
   if (!env.isTest) app.use(morgan(env.isProd ? 'combined' : 'dev'));
   app.use(cookieParser());
+  app.use((req, res, next) => {
+    const methods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+    if (!methods.has(req.method)) return next();
+    const origin = req.headers.origin || '';
+    const allowedOrigins = env.clientUrl.filter(Boolean).map((url) => {
+      try { return new URL(url).origin; } catch { return null; }
+    }).filter(Boolean);
+    if (!origin) return next();
+    if (allowedOrigins.includes(origin)) return next();
+    return res.status(403).json({ success: false, message: 'Origin not allowed for this request.' });
+  });
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
   app.use(sanitize);

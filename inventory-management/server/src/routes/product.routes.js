@@ -11,6 +11,6 @@ router.get('/:id', requirePermission('products.view'), c.get);
 router.post('/', requirePermission('products.create'), productImage, validate(productBody), c.create);
 router.put('/:id', requirePermission('products.edit'), productImage, validate(productBody), c.update);
 router.delete('/:id', requirePermission('products.delete'), c.remove);
-router.patch('/:id/restore', c.restore);
+router.patch('/:id/restore', requirePermission('products.edit'), c.restore);
 
 module.exports = router;

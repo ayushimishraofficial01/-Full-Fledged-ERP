@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, trim: true, unique: true, sparse: true, match: [/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number'] },
     password: { type: String, required: true, minlength: 8, select: false },
     // Roles are stored now so permissions can be layered on later without a migration.
-    role: { type: String, trim: true, lowercase: true, match: /^[a-z][a-z0-9 _-]*$/, default: 'admin' },
+    role: { type: String, trim: true, lowercase: true, match: /^[a-z][a-z0-9 _-]*$/, default: 'user' },
     department: { type: String, trim: true, default: 'General', maxlength: 80 },
     departmentRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', default: null, index: true },
     employeeId: { type: String, trim: true, default: '', maxlength: 50 },
